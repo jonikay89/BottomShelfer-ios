@@ -35,6 +35,14 @@ final class FiltersViewController: UIViewController, BottomShelferPresentable {
         bottomShelferPresentationManager.isDraggingEnabled = true
         bottomShelferPresentationManager.allowGrabbingNonScrollViews = false
         bottomShelferPresentationManager.dimmingColor = .black.withAlphaComponent(0.35)
+
+        // Custom layout metrics — every default in BottomShelferLayout can be
+        // overridden here, e.g. a wider sheet and a larger grabber pill.
+        var layout = BottomShelferLayoutConfiguration()
+        layout.maxSheetWidth = 500
+        layout.grabberPillSize = CGSize(width: 60, height: 8)
+        layout.grabberPillBottomOffset = 14
+        bottomShelferPresentationManager.layoutConfiguration = layout
     }
 
     // MARK: UI
