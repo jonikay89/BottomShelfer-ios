@@ -16,4 +16,12 @@ struct BottomShelferSmokeTests {
         #expect(BottomShelferLayout.maxHeightFraction > 0)
         #expect(BottomShelferLayout.grabberHitAreaHeight > 0)
     }
+
+    @Test func bundledLogoImageLoadsFromAssetCatalog() {
+        // Confirms the BottomShelfer.svg was compiled into the framework's
+        // asset catalog and is resolvable via Bundle.module at runtime.
+        let logo = BottomShelferAssets.logo
+        #expect(logo != nil)
+        #expect((logo?.size.width ?? 0) > 0)
+    }
 }

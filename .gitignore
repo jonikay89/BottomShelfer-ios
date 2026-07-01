@@ -6,3 +6,7 @@ DerivedData/
 .swiftpm/configuration/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
+
+# Sample app: xcodegen regenerates the project from project.yml
+SampleApp/SampleApp.xcodeproj
+SampleApp/SampleApp.xcodeproj/**

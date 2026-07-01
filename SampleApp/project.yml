@@ -1,0 +1,35 @@
+name: SampleApp
+options:
+  bundleIdPrefix: com.bottomshelfer
+  deploymentTarget:
+    iOS: "15.0"
+  developmentLanguage: en
+packages:
+  BottomShelfer:
+    path: ../
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  SampleApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: SampleApp
+    resources:
+      - path: SampleApp/Assets.xcassets
+    dependencies:
+      - package: BottomShelfer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.bottomshelfer.SampleApp
+        INFOPLIST_FILE: SampleApp/Info.plist
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGN_IDENTITY: ""
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: "NO"
