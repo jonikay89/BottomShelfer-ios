@@ -5,6 +5,7 @@ import Combine
 ///
 /// The conforming type owns the `BottomShelferPresentationManager` so the same
 /// instance is reused as the `transitioningDelegate` across presentations.
+@MainActor
 public protocol BottomShelferPresentable: AnyObject {
     var bottomShelferPresentationManager: BottomShelferPresentationManager { get }
 

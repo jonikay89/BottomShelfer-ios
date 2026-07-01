@@ -13,7 +13,7 @@ private final class GrabberHitAreaView: UIView {
 /// A custom `UIPresentationController` that renders the presented view as a
 /// bottom-anchored sheet with multiple height detents, a draggable grabber,
 /// and an optional dimming scrim.
-public final class BottomShelferPresentationController: UIPresentationController {
+public class BottomShelferPresentationController: UIPresentationController {
 
     // MARK: Views
 

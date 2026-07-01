@@ -1,6 +1,19 @@
 import Testing
+import UIKit
 @testable import BottomShelfer
 
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+/// Smoke test: the module and its primary types are importable/instantiable.
+@MainActor
+struct BottomShelferSmokeTests {
+
+    @Test func managerIsConstructable() {
+        let manager = BottomShelferPresentationManager()
+        #expect(manager.detents.count >= 1)
+    }
+
+    @Test func layoutConstantsArePositive() {
+        #expect(BottomShelferLayout.maxSheetWidth > 0)
+        #expect(BottomShelferLayout.maxHeightFraction > 0)
+        #expect(BottomShelferLayout.grabberHitAreaHeight > 0)
+    }
 }

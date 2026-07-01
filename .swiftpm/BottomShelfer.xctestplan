@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "667E5F80-9E62-430B-8E6B-5A9A1CD698BB",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "BottomShelferTests",
+        "name" : "BottomShelferTests"
+      }
+    }
+  ],
+  "version" : 1
+}
