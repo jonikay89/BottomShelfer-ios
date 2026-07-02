@@ -36,6 +36,15 @@ final class TestablePresentationController: BottomShelferPresentationController 
     }
 
     override var containerView: UIView? { syntheticContainer }
+
+    /// Updates the synthetic container to a new size, then triggers layout so
+    /// `containerViewWillLayoutSubviews` / `containerViewDidLayoutSubviews`
+    /// react as if a rotation occurred.
+    func resizeContainer(to size: CGSize) {
+        syntheticContainer.frame = CGRect(origin: .zero, size: size)
+        containerViewWillLayoutSubviews()
+        containerViewDidLayoutSubviews()
+    }
 }
 
 // MARK: - Window harness
