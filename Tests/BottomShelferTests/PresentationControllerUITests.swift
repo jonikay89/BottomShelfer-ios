@@ -288,4 +288,53 @@ struct PresentationControllerUITests {
         #expect(frame != nil)
         #expect(frame?.height == 300)  // defaults to 300 from the makeController default
     }
+
+    // MARK: - keyboard offset
+
+    @Test func keyboardOffsetShiftsFrameUp() {
+        let pc = makeController(detents: [.custom(height: 300)], selectedIndex: 0)
+        #expect(pc.keyboardOffsetY == 0)
+
+        let before = pc.frameOfPresentedViewInContainerView
+        pc.keyboardOffsetY = 120
+        let after = pc.frameOfPresentedViewInContainerView
+
+        #expect(after.origin.y == before.origin.y - 120)
+        #expect(after.height == before.height)
+        #expect(after.width == before.width)
+    }
+
+    @Test func keyboardOffsetClampedToZeroY() {
+        let pc = makeController(detents: [.custom(height: 300)], selectedIndex: 0)
+        let containerH = Self.containerSize.height
+        // Push the offset so far that the computed y would go negative.
+        pc.keyboardOffsetY = containerH
+        let frame = pc.frameOfPresentedViewInContainerView
+        #expect(frame.origin.y >= 0)
+    }
+
+    // MARK: - dimming view
+
+    @Test func finalizeSnapDoesNotShowDimmingWhenDisabled() {
+        // Build a controller with dimming disabled BEFORE lifecycle runs.
+        let presented = UIViewController()
+        let pc = TestablePresentationController(
+            presented: presented,
+            presenting: nil,
+            containerSize: Self.containerSize
+        )
+        pc.isDimmingViewEnabled = false
+        pc.detents = [.custom(height: 300)]
+        pc.selectedDetentIndex = 0
+        pc.presentationTransitionWillBegin()
+        pc.containerViewWillLayoutSubviews()
+        pc.presentationTransitionDidEnd(true)
+
+        pc.snapToHeight(300)
+        TestHarness.flushRunLoop(seconds: 0.5)
+
+        let containerSubviews = pc.containerView?.subviews ?? []
+        let dimming = containerSubviews.first { $0.backgroundColor != .clear }
+        #expect(dimming?.alpha == 0)
+    }
 }

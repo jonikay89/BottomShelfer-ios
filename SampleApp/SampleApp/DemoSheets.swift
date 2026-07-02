@@ -1,5 +1,6 @@
 import UIKit
 import BottomShelfer
+import Combine
 
 /// A simple sheet showing how to snap programmatically.
 final class FiltersSheetViewController: UIViewController, BottomShelferPresentable {
@@ -130,5 +131,138 @@ extension ScrollableSheetViewController: UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = "Row \(indexPath.row + 1)"
         return cell
+    }
+}
+
+// MARK: - Keyboard-aware sheet
+
+/// Shows how the sheet lifts out of the way when the keyboard appears.
+/// Uses `startObservingKeyboardForBottomShelfer` and a text field.
+final class KeyboardSheetViewController: UIViewController, BottomShelferPresentable {
+    let bottomShelferPresentationManager = BottomShelferPresentationManager()
+
+    var dismissOnHide: Bool { false }
+
+    private var cancellables = Set<AnyCancellable>()
+    private let textField = UITextField()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        let header = UILabel()
+        header.text = "Tap the field — the sheet lifts for the keyboard."
+        header.numberOfLines = 0
+        header.textAlignment = .center
+        header.font = .preferredFont(forTextStyle: .body)
+
+        textField.placeholder = "Type something..."
+        textField.borderStyle = .roundedRect
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [header, textField, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .fill
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+
+        startObservingKeyboardForBottomShelfer(cancellables: &cancellables)
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+}
+
+// MARK: - Transparent / no-dim sheet
+
+/// Demonstrates a sheet without a dimming scrim. The background content remains
+/// visible and tappable through the scrim area.
+final class TransparentSheetViewController: UIViewController, BottomShelferPresentable {
+    let bottomShelferPresentationManager = BottomShelferPresentationManager()
+
+    var dismissOnHide: Bool { true }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .secondarySystemBackground
+
+        let label = UILabel()
+        label.text = "No dimming scrim behind this sheet.\nTap the button to dismiss."
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .preferredFont(forTextStyle: .body)
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [label, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+}
+
+// MARK: - Fixed (non-draggable) sheet
+
+/// A sheet the user cannot drag — only the dismissal button closes it.
+final class FixedSheetViewController: UIViewController, BottomShelferPresentable {
+    let bottomShelferPresentationManager = BottomShelferPresentationManager()
+
+    var dismissOnHide: Bool { false }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        let label = UILabel()
+        label.text = "This sheet cannot be dragged.\nUse the button to dismiss."
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .preferredFont(forTextStyle: .body)
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [label, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
     }
 }

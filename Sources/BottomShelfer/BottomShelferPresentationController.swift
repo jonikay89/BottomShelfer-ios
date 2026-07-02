@@ -71,6 +71,7 @@ public class BottomShelferPresentationController: UIPresentationController {
     private var scrollViewBouncesCache = false
     private var hasPresented = false
     private var lastContainerSize: CGSize = .zero
+    var keyboardOffsetY: CGFloat = 0
 
     private var containerHeight: CGFloat {
         containerView?.bounds.height ?? UIScreen.main.bounds.height
@@ -301,6 +302,7 @@ public class BottomShelferPresentationController: UIPresentationController {
     private func finalizeSnap(to size: CGSize) {
         presentedViewController.preferredContentSize = size
         isUserDragging = false
+        guard isDimmingViewEnabled else { return }
         UIView.animate(withDuration: 0.2) {
             self.dimmingView.alpha = 1.0
         }
@@ -410,7 +412,8 @@ public class BottomShelferPresentationController: UIPresentationController {
         let height = min(currentDetentHeight, maxHeight)
         let width = layoutConfiguration.sheetWidth(in: containerView)
         let x = (containerView.bounds.width - width) / 2.0
-        return CGRect(x: x, y: containerView.bounds.height - height, width: width, height: height)
+        let y = containerView.bounds.height - height - keyboardOffsetY
+        return CGRect(x: x, y: max(y, 0), width: width, height: height)
     }
 
     // MARK: View setup helpers

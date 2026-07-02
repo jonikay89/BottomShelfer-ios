@@ -44,29 +44,26 @@ extension BottomShelferPresentable where Self: UIViewController {
         NotificationCenter.default
             .publisher(for: UIResponder.keyboardWillShowNotification)
             .sink { [weak self] notification in
-                // Keyboard notifications are always delivered on the main thread.
                 MainActor.assumeIsolated {
                     guard let self,
                           let userInfo = notification.userInfo,
                           let keyboardFrameEnd = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
                           let pc = self.presentationController as? BottomShelferPresentationController,
-                          let presentedView = pc.presentedView,
                           let containerView = pc.containerView
                     else { return }
 
                     let keyboardFrameInContainer = containerView.convert(keyboardFrameEnd, from: nil)
                     let duration = (userInfo[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval) ?? 0.3
-                    // The system reports a private curve (raw value 7) for keyboard
-                    // animations; shifting it into the animation-options bits is the
-                    // documented way to match the keyboard's motion exactly.
                     let curveValue = (userInfo[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt) ?? 7
                     let options = UIView.AnimationOptions(rawValue: curveValue << 16)
 
-                    let sheetHeight = presentedView.frame.height
-                    let targetY = max(keyboardFrameInContainer.minY - sheetHeight, 0)
+                    let overlap = max(0, containerView.bounds.height - keyboardFrameInContainer.minY)
+                    let maxOffset = containerView.bounds.height - (pc.presentedView?.frame.height ?? 0)
+                    pc.keyboardOffsetY = min(overlap, maxOffset)
 
                     UIView.animate(withDuration: duration, delay: 0, options: options) {
-                        presentedView.frame.origin.y = targetY
+                        containerView.setNeedsLayout()
+                        containerView.layoutIfNeeded()
                     }
                 }
             }
@@ -78,15 +75,15 @@ extension BottomShelferPresentable where Self: UIViewController {
                 MainActor.assumeIsolated {
                     guard let self,
                           !self.isBeingDismissed,
-                          let pc = self.presentationController as? BottomShelferPresentationController,
-                          let presentedView = pc.presentedView
+                          let pc = self.presentationController as? BottomShelferPresentationController
                     else { return }
 
-                    let containerHeight = pc.containerView?.bounds.height ?? UIScreen.main.bounds.height
+                    pc.keyboardOffsetY = 0
                     let duration = (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval) ?? 0.25
 
                     UIView.animate(withDuration: duration) {
-                        presentedView.frame.origin.y = containerHeight - presentedView.frame.height
+                        pc.containerView?.setNeedsLayout()
+                        pc.containerView?.layoutIfNeeded()
                     }
                 }
             }

@@ -13,6 +13,9 @@ final class RootViewController: UIViewController {
         ("Multi-detent sheet", "Small / medium / large snap points + buttons", { $0.presentFiltersSheet() }),
         ("Custom layout", "Wider sheet, big grabber, 0.6 max-height fraction", { $0.presentCustomLayoutSheet() }),
         ("Scrollable sheet", "Embedded scroll view, drag-to-dismiss", { $0.presentScrollableSheet() }),
+        ("Keyboard-aware", "Sheet lifts above the keyboard when editing", { $0.presentKeyboardSheet() }),
+        ("No dimming scrim", "Transparent backdrop, content behind stays visible", { $0.presentTransparentSheet() }),
+        ("Non-draggable", "Dragging disabled — only dismissible via button", { $0.presentFixedSheet() }),
     ]
 
     override func viewDidLoad() {
@@ -91,6 +94,26 @@ private extension RootViewController {
     func presentScrollableSheet() {
         let sheet = ScrollableSheetViewController()
         sheet.bottomShelferPresentationManager.detents = [.medium(), .large()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentKeyboardSheet() {
+        let sheet = KeyboardSheetViewController()
+        sheet.bottomShelferPresentationManager.detents = [.custom(height: 200)]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentTransparentSheet() {
+        let sheet = TransparentSheetViewController()
+        sheet.bottomShelferPresentationManager.isDimmingViewEnabled = false
+        sheet.bottomShelferPresentationManager.detents = [.medium()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentFixedSheet() {
+        let sheet = FixedSheetViewController()
+        sheet.bottomShelferPresentationManager.isDraggingEnabled = false
+        sheet.bottomShelferPresentationManager.detents = [.small()]
         sheet.presentAsBottomShelfer(from: self, animated: true)
     }
 }
