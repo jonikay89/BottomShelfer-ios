@@ -9,7 +9,9 @@ let package = Package(
         .iOS(.v13),
     ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
+        // The library product consumers link against. `BottomShelfer` exposes
+        // the presentation controller, detents, layout configuration, and the
+        // bundled logo asset.
         .library(
             name: "BottomShelfer",
             targets: ["BottomShelfer"]

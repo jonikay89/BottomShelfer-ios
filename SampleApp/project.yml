@@ -4,9 +4,10 @@ options:
   deploymentTarget:
     iOS: "15.0"
   developmentLanguage: en
+  postGenCommand: "python3 fix_package_ref.py"
 packages:
   BottomShelfer:
-    path: ../
+    path: ..
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -24,6 +25,7 @@ targets:
       - path: SampleApp/Assets.xcassets
     dependencies:
       - package: BottomShelfer
+        product: BottomShelfer
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.bottomshelfer.SampleApp

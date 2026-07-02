@@ -69,6 +69,8 @@ public class BottomShelferPresentationController: UIPresentationController {
     private var isUserDragging = false
     private var trackedScrollView: UIScrollView?
     private var scrollViewBouncesCache = false
+    private var hasPresented = false
+    private var lastContainerSize: CGSize = .zero
 
     private var containerHeight: CGFloat {
         containerView?.bounds.height ?? UIScreen.main.bounds.height
@@ -124,7 +126,13 @@ public class BottomShelferPresentationController: UIPresentationController {
     }
 
     private func detentIndex(forHeight height: CGFloat) -> Int {
-        detents.firstIndex { abs($0.height - height) < 1 } ?? 0
+        var best = 0
+        var bestDist = abs(detents[0].height - height)
+        for i in 1..<detents.count {
+            let d = abs(detents[i].height - height)
+            if d < bestDist { bestDist = d; best = i }
+        }
+        return best
     }
 
     // MARK: Scroll-view discovery
@@ -265,11 +273,16 @@ public class BottomShelferPresentationController: UIPresentationController {
     public func snapToHeight(_ targetHeight: CGFloat) {
         guard let presentedView = presentedView else { return }
 
+        selectedDetentIndex = detentIndex(forHeight: targetHeight)
+
+        let maxHeight = containerHeight * layoutConfiguration.maxHeightFraction
+        let clampedHeight = min(targetHeight, maxHeight)
+
         let targetFrame = CGRect(
             x: presentedView.frame.origin.x,
-            y: containerHeight - targetHeight,
+            y: containerHeight - clampedHeight,
             width: presentedView.frame.width,
-            height: targetHeight
+            height: clampedHeight
         )
 
         UIView.animate(
@@ -359,16 +372,27 @@ public class BottomShelferPresentationController: UIPresentationController {
     public override func presentationTransitionDidEnd(_ completed: Bool) {
         if completed {
             dragStartY = presentedView?.frame.origin.y ?? 0
+            hasPresented = true
         }
     }
 
     public override func containerViewWillLayoutSubviews() {
         super.containerViewWillLayoutSubviews()
+
+        let currentSize = containerView?.bounds.size ?? .zero
+        let sizeChanged = currentSize != lastContainerSize
+        lastContainerSize = currentSize
+
         rebuildSnapPoints()
         guard !isUserDragging else { return }
-        // Preserve the current selection across rotations / layout passes
-        // rather than forcing it back to the smallest detent.
-        selectedDetentIndex = min(selectedDetentIndex, max(detents.count - 1, 0))
+
+        if hasPresented, sizeChanged, let presentedView, !snapHeights.isEmpty {
+            let targetHeight = snapHeights[snapIndexClosest(to: presentedView.frame.origin.y)]
+            selectedDetentIndex = detentIndex(forHeight: targetHeight)
+        } else {
+            selectedDetentIndex = min(selectedDetentIndex, max(detents.count - 1, 0))
+        }
+
         presentedView?.frame = frameOfPresentedViewInContainerView
         presentedViewController.preferredContentSize = frameOfPresentedViewInContainerView.size
     }
