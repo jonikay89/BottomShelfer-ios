@@ -17,6 +17,7 @@ final class RootViewController: UIViewController {
         ("Custom grabber", "Wider, thicker, indigo grabber pill", { $0.presentGrabberPillSheet() }),
         ("SwiftUI content", "SwiftUI form embedded in a bottom sheet", { $0.presentSwiftUISheet() }),
         ("Hidden grabber pill", "Drag works, but the pill is invisible", { $0.presentHiddenGrabberSheet() }),
+        ("Custom grabber view", "Rainbow gradient grabber with custom animation", { $0.presentCustomGrabberSheet() }),
         ("Drag & dismiss events", "Callback log for grabber, content, dismiss", { $0.presentEventsSheet() }),
     ]
 
@@ -141,6 +142,16 @@ private extension RootViewController {
 
     func presentHiddenGrabberSheet() {
         let sheet = SimpleSheetViewController()
+        var layout = BottomShelferLayoutConfiguration()
+        layout.grabberPillSize = .zero
+        layout.grabberPillBottomOffset = 0
+        sheet.bottomShelferPresentationManager.layoutConfiguration = layout
+        sheet.bottomShelferPresentationManager.detents = [.medium()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentCustomGrabberSheet() {
+        let sheet = CustomGrabberViewController()
         var layout = BottomShelferLayoutConfiguration()
         layout.grabberPillSize = .zero
         layout.grabberPillBottomOffset = 0

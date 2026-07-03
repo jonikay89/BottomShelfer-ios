@@ -315,6 +315,102 @@ final class GrabberPillSheetViewController: UIViewController, BottomShelferPrese
     }
 }
 
+// MARK: - Custom grabber view demo
+
+/// Replaces the built-in grabber pill with a custom rainbow-gradient view
+/// that has its own drag animation, positioned at the top of the sheet.
+final class CustomGrabberViewController: UIViewController, BottomShelferPresentable {
+    lazy var bottomShelferPresentationManager: BottomShelferPresentationManager = {
+        let manager = BottomShelferPresentationManager()
+        manager.onGrabberDragBegan = { [weak self] in self?.animateGrabber(active: true) }
+        manager.onGrabberDragEnded = { [weak self] in self?.animateGrabber(active: false) }
+        return manager
+    }()
+
+    var dismissOnHide: Bool { true }
+
+    private let customGrabber = CustomGrabberView()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        customGrabber.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(customGrabber)
+
+        let label = UILabel()
+        label.text = "Custom rainbow grabber,\ndrag it to move the sheet."
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .preferredFont(forTextStyle: .body)
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [label, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            customGrabber.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            customGrabber.centerYAnchor.constraint(equalTo: view.topAnchor, constant: 16),
+            customGrabber.widthAnchor.constraint(equalToConstant: 48),
+            customGrabber.heightAnchor.constraint(equalToConstant: 6),
+
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+
+    private func animateGrabber(active: Bool) {
+        UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
+            self.customGrabber.transform = active
+                ? CGAffineTransform(scaleX: 1.5, y: 1.8).rotated(by: .pi / 180 * 3)
+                : .identity
+            self.customGrabber.alpha = active ? 0.7 : 1
+        }
+    }
+}
+
+private final class CustomGrabberView: UIView {
+
+    private let gradient = CAGradientLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.cornerRadius = 3
+        clipsToBounds = true
+
+        gradient.colors = [
+            UIColor.systemRed.cgColor,
+            UIColor.systemOrange.cgColor,
+            UIColor.systemYellow.cgColor,
+            UIColor.systemGreen.cgColor,
+            UIColor.systemBlue.cgColor,
+            UIColor.systemPurple.cgColor,
+        ]
+        gradient.startPoint = CGPoint(x: 0, y: 0.5)
+        gradient.endPoint = CGPoint(x: 1, y: 0.5)
+        layer.addSublayer(gradient)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradient.frame = bounds
+    }
+}
+
 // MARK: - Events demo
 
 /// Demonstrates drag, dismiss, and detent-change callbacks with on-screen log.

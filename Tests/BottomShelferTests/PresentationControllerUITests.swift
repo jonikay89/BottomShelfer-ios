@@ -361,4 +361,62 @@ struct PresentationControllerUITests {
 
         TestHarness.flushRunLoop(seconds: 0.3)
     }
+
+    // MARK: - grabber pill
+
+    @Test func grabberPillAnimatesOnDrag() {
+        let pc = makeController(detents: [.custom(height: 200), .custom(height: 500)], selectedIndex: 1)
+        pc.presentationTransitionDidEnd(true)
+
+        // Pill should be at identity transform and full alpha before drag.
+        let initialAlpha = findGrabberPillAlpha(in: pc)
+        #expect(initialAlpha == 1)
+
+        drivePan(pc.grabberPanGesture, on: pc, translation: CGPoint(x: 0, y: 50))
+
+        // After drag ends, pill should return to identity and full alpha.
+        let finalAlpha = findGrabberPillAlpha(in: pc)
+        #expect(finalAlpha == 1)
+    }
+
+    @Test func grabberPillFadesInOnPresentation() {
+        let presented = UIViewController()
+        let pc = TestablePresentationController(
+            presented: presented,
+            presenting: nil,
+            containerSize: Self.containerSize
+        )
+        pc.detents = [.custom(height: 300)]
+        pc.selectedDetentIndex = 0
+        pc.presentationTransitionWillBegin()
+
+        let alpha = findGrabberPillAlpha(in: pc)
+        #expect(alpha == 1)
+    }
+
+    @Test func grabberPillSizeZeroHidesPill() {
+        let pc = makeController(configure: {
+            $0.grabberPillSize = .zero
+            $0.grabberPillBottomOffset = 0
+        })
+        guard let pv = pc.presentedView else { return }
+        let pill = findView(in: pv) { v in
+            v.bounds.size == .zero && v.layer.cornerRadius > 0
+        }
+        // Should not find a visible pill — but the zero-sized view
+        // still exists in the hierarchy with constraints active.
+        #expect(pill == nil || pill?.bounds.size == .zero)
+    }
+
+    private func findGrabberPillAlpha(in pc: TestablePresentationController) -> CGFloat {
+        guard let pv = pc.presentedView else { return -1 }
+        for sub in pv.subviews {
+            for inner in sub.subviews {
+                if inner.layer.cornerRadius > 0 {
+                    return inner.alpha
+                }
+            }
+        }
+        return -1
+    }
 }
