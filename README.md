@@ -1,8 +1,19 @@
 # BottomShelfer
 
+<p align="center">
+  <img src="Sources/BottomShelfer/Resources/Assets.xcassets/BottomShelfer.imageset/BottomShelfer.svg" width="120" alt="BottomShelfer logo" />
+</p>
+
 A customizable slide-up bottom sheet presentation controller for UIKit. Works
 pre-iOS 15, supporting arbitrary height detents, a draggable grabber, optional
 dimming scrim, keyboard avoidance, rotation, and full layout-metric overrides.
+
+<p align="center">
+  <a href="https://github.com/jonikay89/BottomShelfer-ios"><img src="https://img.shields.io/badge/github-jonikay89%2FBottomShelfer--ios-blue" /></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/swift-6.0%2B-orange" /></a>
+  <a href="https://developer.apple.com/ios/"><img src="https://img.shields.io/badge/iOS-13.0%2B-lightgrey" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" /></a>
+</p>
 
 ![](BottomShelfer-SampleApp.gif)
 
@@ -168,4 +179,8 @@ MIT — see [LICENSE](LICENSE).
 
 ## Author
 
-**jonikay** — wdiltd399@gmail.com
+**jonikay89** — [@jonikay89](https://github.com/jonikay89)
+
+---
+
+[github]: https://github.com/jonikay89/BottomShelfer-ios
