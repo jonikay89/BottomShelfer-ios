@@ -27,7 +27,7 @@ dimming scrim, keyboard avoidance, rotation, and full layout-metric overrides.
 Swift Package Manager:
 
 ```swift
-.package(url: "https://github.com/jonikay/BottomShelfer.git", from: "1.0.0")
+.package(url: "https://github.com/jonikay89/BottomShelfer-ios.git", from: "1.0.0")
 ```
 
 ## Quick start
