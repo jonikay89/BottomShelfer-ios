@@ -29,6 +29,26 @@ public final class BottomShelferPresentationManager: NSObject, UIViewControllerT
     /// Override the defaults to restyle the sheet for your app.
     public var layoutConfiguration: BottomShelferLayoutConfiguration = .default
 
+    // MARK: Callbacks
+
+    /// Called when the sheet is dismissed (by drag, scrim tap, or button).
+    public var onDismiss: (() -> Void)?
+
+    /// Called when the user begins dragging via the grabber pill.
+    public var onGrabberDragBegan: (() -> Void)?
+
+    /// Called when the drag via grabber pill ends (snap resolved).
+    public var onGrabberDragEnded: (() -> Void)?
+
+    /// Called when the user begins a content drag.
+    public var onContentDragBegan: (() -> Void)?
+
+    /// Called when a content drag ends (snap resolved).
+    public var onContentDragEnded: (() -> Void)?
+
+    /// Called when the sheet snaps to a new detent (index in detents array).
+    public var onDetentChanged: ((_ index: Int, _ height: CGFloat) -> Void)?
+
     /// Height of the currently selected detent, clamped to the array bounds.
     public var currentDetentHeight: CGFloat {
         guard !detents.isEmpty else { return UIScreen.main.bounds.height * layoutConfiguration.maxHeightFraction }
@@ -53,6 +73,12 @@ public final class BottomShelferPresentationManager: NSObject, UIViewControllerT
         pc.allowGrabbingNonScrollViews = allowGrabbingNonScrollViews
         pc.dimmingColor = dimmingColor
         pc.layoutConfiguration = layoutConfiguration
+        pc.onDismiss = onDismiss
+        pc.onGrabberDragBegan = onGrabberDragBegan
+        pc.onGrabberDragEnded = onGrabberDragEnded
+        pc.onContentDragBegan = onContentDragBegan
+        pc.onContentDragEnded = onContentDragEnded
+        pc.onDetentChanged = onDetentChanged
         return pc
     }
 

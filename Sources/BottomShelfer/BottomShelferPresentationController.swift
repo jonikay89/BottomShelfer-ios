@@ -3,12 +3,12 @@ import UIKit
 /// Invisible hit-test view that lets touches pass through itself but still
 /// drive its own gesture recognizer – used for the grabber area so the rest
 /// of the 44pt band stays tappable by the content beneath.
-private final class GrabberHitAreaView: UIView {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        let view = super.hitTest(point, with: event)
-        return view === self ? nil : view
+    private final class GrabberHitAreaView: UIView {
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            let view = super.hitTest(point, with: event)
+            return view === self ? nil : view
+        }
     }
-}
 
 /// A custom `UIPresentationController` that renders the presented view as a
 /// bottom-anchored sheet with multiple height detents, a draggable grabber,
@@ -26,7 +26,12 @@ public class BottomShelferPresentationController: UIPresentationController {
 
     private let grabberPill: UIView = {
         let v = UIView()
-        v.backgroundColor = UIColor(white: 0, alpha: 0.15)
+        v.backgroundColor = UIColor(dynamicProvider: { traits in
+            switch traits.userInterfaceStyle {
+            case .dark: return UIColor(white: 1, alpha: 0.3)
+            default: return UIColor(white: 0, alpha: 0.15)
+            }
+        })
         v.layer.cornerRadius = BottomShelferLayout.grabberPillCornerRadius
         v.alpha = 0
         return v
@@ -57,6 +62,15 @@ public class BottomShelferPresentationController: UIPresentationController {
     var dimmingColor: UIColor = BottomShelferLayout.defaultDimmingColor {
         didSet { dimmingView.backgroundColor = dimmingColor }
     }
+
+    // MARK: Callbacks
+
+    var onDismiss: (() -> Void)?
+    var onGrabberDragBegan: (() -> Void)?
+    var onGrabberDragEnded: (() -> Void)?
+    var onContentDragBegan: (() -> Void)?
+    var onContentDragEnded: (() -> Void)?
+    var onDetentChanged: ((_ index: Int, _ height: CGFloat) -> Void)?
 
     // MARK: State
 
@@ -155,7 +169,7 @@ public class BottomShelferPresentationController: UIPresentationController {
 
     // MARK: Pan handling
 
-    @objc private func handleGrabberPan(_ gesture: UIPanGestureRecognizer) {
+    @objc func handleGrabberPan(_ gesture: UIPanGestureRecognizer) {
         guard let presentedView = presentedView else { return }
         let velocity = gesture.velocity(in: presentedView.superview)
 
@@ -168,6 +182,13 @@ public class BottomShelferPresentationController: UIPresentationController {
             if let sv = trackedScrollView {
                 scrollViewBouncesCache = sv.bounces
                 sv.bounces = false
+            }
+
+            if gesture === grabberPanGesture {
+                onGrabberDragBegan?()
+                animateGrabberPill(active: true)
+            } else {
+                onContentDragBegan?()
             }
 
         case .changed:
@@ -198,6 +219,13 @@ public class BottomShelferPresentationController: UIPresentationController {
                 sv.contentOffset.y = sv.adjustedContentInset.top
             }
             trackedScrollView = nil
+
+            if gesture === grabberPanGesture {
+                onGrabberDragEnded?()
+                animateGrabberPill(active: false)
+            } else {
+                onContentDragEnded?()
+            }
 
         default:
             break
@@ -299,9 +327,12 @@ public class BottomShelferPresentationController: UIPresentationController {
 
     /// Shared completion for snap animations: publish the new preferred size,
     /// clear the drag flag, and ensure the scrim is fully visible.
-    private func finalizeSnap(to size: CGSize) {
+    func finalizeSnap(to size: CGSize) {
         presentedViewController.preferredContentSize = size
         isUserDragging = false
+        let idx = min(selectedDetentIndex, max(detents.count - 1, 0))
+        let ht = detents.isEmpty ? containerHeight * layoutConfiguration.maxHeightFraction : detents[idx].height
+        onDetentChanged?(idx, ht)
         guard isDimmingViewEnabled else { return }
         UIView.animate(withDuration: 0.2) {
             self.dimmingView.alpha = 1.0
@@ -310,7 +341,18 @@ public class BottomShelferPresentationController: UIPresentationController {
 
     private func dismissAnimated() {
         isUserDragging = false
+        onDismiss?()
         presentedViewController.dismiss(animated: true)
+    }
+
+    private func animateGrabberPill(active: Bool) {
+        let transform: CGAffineTransform = active
+            ? CGAffineTransform(scaleX: 1.3, y: 1.0)
+            : .identity
+        UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut, .allowUserInteraction]) {
+            self.grabberPill.transform = transform
+            self.grabberPill.alpha = active ? 0.6 : 1
+        }
     }
 
     // MARK: Tap-to-dismiss
@@ -350,9 +392,11 @@ public class BottomShelferPresentationController: UIPresentationController {
         if let coordinator = presentedViewController.transitionCoordinator {
             coordinator.animate(alongsideTransition: { _ in
                 self.dimmingView.alpha = targetAlpha
+                self.grabberPill.alpha = 1
             })
         } else {
             dimmingView.alpha = targetAlpha
+            grabberPill.alpha = 1
         }
 
         stylePresentedView()
@@ -361,13 +405,14 @@ public class BottomShelferPresentationController: UIPresentationController {
     }
 
     public override func dismissalTransitionWillBegin() {
-        guard isDimmingViewEnabled else { return }
         if let coordinator = presentedViewController.transitionCoordinator {
             coordinator.animate(alongsideTransition: { _ in
-                self.dimmingView.alpha = 0
+                if self.isDimmingViewEnabled { self.dimmingView.alpha = 0 }
+                self.grabberPill.alpha = 0
             })
         } else {
-            dimmingView.alpha = 0
+            if isDimmingViewEnabled { dimmingView.alpha = 0 }
+            grabberPill.alpha = 0
         }
     }
 
@@ -391,6 +436,9 @@ public class BottomShelferPresentationController: UIPresentationController {
         if hasPresented, sizeChanged, let presentedView, !snapHeights.isEmpty {
             let targetHeight = snapHeights[snapIndexClosest(to: presentedView.frame.origin.y)]
             selectedDetentIndex = detentIndex(forHeight: targetHeight)
+            let idx = min(selectedDetentIndex, max(detents.count - 1, 0))
+            let ht = detents.isEmpty ? containerHeight * layoutConfiguration.maxHeightFraction : detents[idx].height
+            onDetentChanged?(idx, ht)
         } else {
             selectedDetentIndex = min(selectedDetentIndex, max(detents.count - 1, 0))
         }

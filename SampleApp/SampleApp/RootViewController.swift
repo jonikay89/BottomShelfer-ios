@@ -1,12 +1,10 @@
 import UIKit
 import BottomShelfer
 
-/// Main menu: each button presents the slide-up sheet with a different
-/// configuration so you can feel the customization options on the simulator.
+/// Main menu: each row presents a different bottom-sheet configuration.
 final class RootViewController: UIViewController {
 
-    private let stack = UIStackView()
-    private let titleLabel = UILabel()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     private let demos: [(title: String, subtitle: String, action: (RootViewController) -> Void)] = [
         ("Default sheet", "Single large detent, package-default layout", { $0.presentDefaultSheet() }),
@@ -16,47 +14,54 @@ final class RootViewController: UIViewController {
         ("Keyboard-aware", "Sheet lifts above the keyboard when editing", { $0.presentKeyboardSheet() }),
         ("No dimming scrim", "Transparent backdrop, content behind stays visible", { $0.presentTransparentSheet() }),
         ("Non-draggable", "Dragging disabled — only dismissible via button", { $0.presentFixedSheet() }),
+        ("Custom grabber", "Wider, thicker, indigo grabber pill", { $0.presentGrabberPillSheet() }),
+        ("SwiftUI content", "SwiftUI form embedded in a bottom sheet", { $0.presentSwiftUISheet() }),
+        ("Hidden grabber pill", "Drag works, but the pill is invisible", { $0.presentHiddenGrabberSheet() }),
+        ("Drag & dismiss events", "Callback log for grabber, content, dismiss", { $0.presentEventsSheet() }),
     ]
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         title = "BottomShelfer"
-        buildUI()
-    }
 
-    private func buildUI() {
-        titleLabel.text = "BottomShelfer demos"
-        titleLabel.font = .preferredFont(forTextStyle: .largeTitle)
-        titleLabel.adjustsFontForContentSizeCategory = true
-
-        stack.axis = .vertical
-        stack.spacing = 14
-        stack.alignment = .fill
-
-        let container = UIStackView(arrangedSubviews: [titleLabel, stack])
-        container.axis = .vertical
-        container.spacing = 24
-        container.alignment = .fill
-        container.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(container)
+        tableView.register(DemoCell.self, forCellReuseIdentifier: DemoCell.reuseID)
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
-            container.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            container.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+    }
+}
 
-        for demo in demos {
-            let button = DemoButton(title: demo.title, subtitle: demo.subtitle)
-            button.addTarget(self, action: #selector(demoTapped(_:)), for: .touchUpInside)
-            button.tag = demos.firstIndex { $0.title == demo.title } ?? 0
-            stack.addArrangedSubview(button)
-        }
+// MARK: - UITableViewDataSource
+
+extension RootViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        demos.count
     }
 
-    @objc private func demoTapped(_ sender: DemoButton) {
-        demos[sender.tag].action(self)
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: DemoCell.reuseID, for: indexPath)
+        let demo = demos[indexPath.row]
+        cell.textLabel?.text = demo.title
+        cell.detailTextLabel?.text = demo.subtitle
+        return cell
+    }
+}
+
+// MARK: - UITableViewDelegate
+
+extension RootViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        demos[indexPath.row].action(self)
     }
 }
 
@@ -116,50 +121,52 @@ private extension RootViewController {
         sheet.bottomShelferPresentationManager.detents = [.small()]
         sheet.presentAsBottomShelfer(from: self, animated: true)
     }
+
+    func presentGrabberPillSheet() {
+        let sheet = GrabberPillSheetViewController()
+        var layout = BottomShelferLayoutConfiguration()
+        layout.grabberPillSize = CGSize(width: 56, height: 6)
+        layout.grabberPillCornerRadius = 3
+        layout.grabberPillBottomOffset = 16
+        sheet.bottomShelferPresentationManager.layoutConfiguration = layout
+        sheet.bottomShelferPresentationManager.detents = [.medium()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentSwiftUISheet() {
+        let sheet = SwiftUISheetViewController()
+        sheet.bottomShelferPresentationManager.detents = [.medium(), .large()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentHiddenGrabberSheet() {
+        let sheet = SimpleSheetViewController()
+        var layout = BottomShelferLayoutConfiguration()
+        layout.grabberPillSize = .zero
+        layout.grabberPillBottomOffset = 0
+        sheet.bottomShelferPresentationManager.layoutConfiguration = layout
+        sheet.bottomShelferPresentationManager.detents = [.medium()]
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
+
+    func presentEventsSheet() {
+        let sheet = EventsSheetViewController()
+        sheet.bottomShelferPresentationManager.detents = BottomShelferDetent.detents(forContentHeight: 420)
+        sheet.presentAsBottomShelfer(from: self, animated: true)
+    }
 }
 
-// MARK: - Demo button
+// MARK: - Demo cell
 
-private final class DemoButton: UIButton {
-    init(title: String, subtitle: String) {
-        super.init(frame: .zero)
-        layer.cornerRadius = 16
-        backgroundColor = .secondarySystemBackground
+private final class DemoCell: UITableViewCell {
+    static let reuseID = "DemoCell"
 
-        let container = UIStackView()
-        container.axis = .vertical
-        container.spacing = 2
-        container.alignment = .leading
-        container.isUserInteractionEnabled = false
-        container.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(container)
-
-        let titleLabel = UILabel()
-        titleLabel.text = title
-        titleLabel.font = .preferredFont(forTextStyle: .headline)
-        titleLabel.adjustsFontForContentSizeCategory = true
-
-        let subtitleLabel = UILabel()
-        subtitleLabel.text = subtitle
-        subtitleLabel.font = .preferredFont(forTextStyle: .footnote)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.numberOfLines = 0
-        subtitleLabel.adjustsFontForContentSizeCategory = true
-
-        container.addArrangedSubview(titleLabel)
-        container.addArrangedSubview(subtitleLabel)
-
-        NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: topAnchor, constant: 14),
-            container.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
-            container.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-        ])
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: .subtitle, reuseIdentifier: reuseIdentifier)
+        accessoryType = .disclosureIndicator
+        detailTextLabel?.numberOfLines = 0
+        detailTextLabel?.textColor = .secondaryLabel
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    override var isHighlighted: Bool {
-        didSet { backgroundColor = isHighlighted ? .tertiarySystemBackground : .secondarySystemBackground }
-    }
 }

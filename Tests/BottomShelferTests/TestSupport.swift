@@ -37,6 +37,10 @@ final class TestablePresentationController: BottomShelferPresentationController 
 
     override var containerView: UIView? { syntheticContainer }
 
+    override var presentedView: UIView? {
+        presentedViewController.view
+    }
+
     /// Updates the synthetic container to a new size, then triggers layout so
     /// `containerViewWillLayoutSubviews` / `containerViewDidLayoutSubviews`
     /// react as if a rotation occurred.

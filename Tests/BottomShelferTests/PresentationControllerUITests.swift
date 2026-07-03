@@ -37,8 +37,6 @@ struct PresentationControllerUITests {
             configure(&layout)
             pc.layoutConfiguration = layout
         }
-        // Run the presentation lifecycle so the presented view is laid out,
-        // grabber + gestures are installed, and snap points are built.
         pc.presentationTransitionWillBegin()
         pc.containerViewWillLayoutSubviews()
         return pc
@@ -50,7 +48,6 @@ struct PresentationControllerUITests {
         let pc = makeController(detents: [.custom(height: 300)])
         let frame = pc.frameOfPresentedViewInContainerView
         #expect(frame.height == 300)
-        // Bottom-anchored: the sheet's bottom edge meets the container's bottom.
         #expect(frame.maxY == Self.containerSize.height)
     }
 
@@ -62,8 +59,6 @@ struct PresentationControllerUITests {
     }
 
     @Test func frameWidthClampsToContainerWidth() {
-        // Container is only 300pt wide; sheet must not exceed it even though the
-        // default cap is 430.
         let pc = makeController(
             detents: [.custom(height: 200)],
             containerSize: CGSize(width: 300, height: 800)
@@ -79,8 +74,6 @@ struct PresentationControllerUITests {
     }
 
     @Test func configuredMaxHeightFractionCapsDetentHeight() {
-        // Detent asks for 600, but a 0.4 max-fraction on an 844pt container
-        // (≈336.8pt) must win.
         let pc = makeController(
             detents: [.custom(height: 600)],
             configure: { $0.maxHeightFraction = 0.4 }
@@ -117,11 +110,8 @@ struct PresentationControllerUITests {
     @Test func snapToHeightUpdatesPresentedViewFrame() {
         let pc = makeController(detents: [.custom(height: 200), .custom(height: 500)], selectedIndex: 0)
         #expect(pc.frameOfPresentedViewInContainerView.height == 200)
-
-        // Manually drive the snap so the test is deterministic and fast.
         pc.snapToHeight(500)
         TestHarness.flushRunLoop(seconds: 0.4)
-
         #expect(pc.presentedView?.frame.height == 500)
     }
 
@@ -147,7 +137,6 @@ struct PresentationControllerUITests {
 
     @Test func grabberPillUsesConfiguredCornerRadius() {
         let pc = makeController(configure: { $0.grabberPillCornerRadius = 9 })
-        // The pill is added to the presented view's hierarchy during install.
         guard let presentedView = pc.presentedView else {
             Issue.record("no presented view")
             return
@@ -172,10 +161,8 @@ struct PresentationControllerUITests {
             selectedIndex: 0
         )
         #expect(pc.selectedDetentIndex == 0)
-
         pc.snapToHeight(500)
         TestHarness.flushRunLoop(seconds: 0.4)
-
         #expect(pc.selectedDetentIndex == 1)
         #expect(pc.frameOfPresentedViewInContainerView.height == 500)
     }
@@ -188,14 +175,11 @@ struct PresentationControllerUITests {
             containerSize: constrainedSize,
             configure: { $0.maxHeightFraction = 0.9 }
         )
-
         pc.presentationTransitionDidEnd(true)
         pc.snapToHeight(800)
         TestHarness.flushRunLoop(seconds: 0.4)
-
         let maxH = constrainedSize.height * 0.9
         #expect(pc.presentedView?.frame.height == maxH)
-        // The y origin must be on-screen, not above the top edge.
         #expect((pc.presentedView?.frame.origin.y ?? -1) >= 0)
     }
 
@@ -212,19 +196,14 @@ struct PresentationControllerUITests {
         pc.presentationTransitionDidEnd(true)
         pc.snapToHeight(800)
         TestHarness.flushRunLoop(seconds: 0.4)
-
         let maxH = constrainedSize.height * 0.9
-        // The frame is clamped to maxHeight — sheet stays on screen.
         #expect(pc.presentedView?.frame.height == maxH)
-        // The selected detent should be the large one (index 2), since
-        // snapToHeight matches against raw detent heights, not capped ones.
         #expect(pc.selectedDetentIndex == 2)
     }
 
     @Test func detentIndexFallsBackToZeroWhenDetentsEmpty() {
         let pc = makeController(detents: [.custom(height: 300)], selectedIndex: 0)
         pc.detents = []
-        // With empty detents, the fallback uses maxHeightFraction.
         let maxH = Self.containerSize.height * pc.layoutConfiguration.maxHeightFraction
         #expect(pc.frameOfPresentedViewInContainerView.height == maxH)
     }
@@ -238,8 +217,6 @@ struct PresentationControllerUITests {
         )
         pc.presentationTransitionDidEnd(true)
         #expect(pc.selectedDetentIndex == 1)
-
-        // Trigger layout at the same size — detent index must stay.
         pc.containerViewWillLayoutSubviews()
         #expect(pc.selectedDetentIndex == 1)
     }
@@ -254,15 +231,10 @@ struct PresentationControllerUITests {
         pc.presentationTransitionDidEnd(true)
         #expect(pc.selectedDetentIndex == 2)
         #expect(pc.presentedView?.frame.height == 700)
-
-        // Simulate rotation to a shorter container where the current detent
-        // doesn't fit; the frame should be capped and the index re-derived.
         pc.resizeContainer(to: CGSize(width: 390, height: 480))
-
         let maxH = 480 * pc.layoutConfiguration.maxHeightFraction
         #expect(pc.presentedView?.frame.height == maxH)
-        // The closest detent to the capped frame height should be selected.
-        #expect(pc.selectedDetentIndex == 1)  // 500 is closest to 480*0.9=432
+        #expect(pc.selectedDetentIndex == 1)
     }
 
     @Test func layoutPreservesInitialDetentBeforePresentationCompletes() {
@@ -270,8 +242,6 @@ struct PresentationControllerUITests {
             detents: [.custom(height: 100), .custom(height: 300), .custom(height: 600)],
             selectedIndex: 2
         )
-        // hasPresented is still false — the simple clamp path must preserve
-        // the user-configured index.
         #expect(pc.selectedDetentIndex == 2)
         pc.containerViewWillLayoutSubviews()
         #expect(pc.selectedDetentIndex == 2)
@@ -281,12 +251,10 @@ struct PresentationControllerUITests {
 
     @Test func transitionDidEndSetsHasPresented() {
         let pc = makeController(selectedIndex: 0)
-        // Manually drive the lifecycle and verify the presented view frame
-        // matches after the transition.
         pc.presentationTransitionDidEnd(true)
         let frame = pc.presentedView?.frame
         #expect(frame != nil)
-        #expect(frame?.height == 300)  // defaults to 300 from the makeController default
+        #expect(frame?.height == 300)
     }
 
     // MARK: - keyboard offset
@@ -294,11 +262,9 @@ struct PresentationControllerUITests {
     @Test func keyboardOffsetShiftsFrameUp() {
         let pc = makeController(detents: [.custom(height: 300)], selectedIndex: 0)
         #expect(pc.keyboardOffsetY == 0)
-
         let before = pc.frameOfPresentedViewInContainerView
         pc.keyboardOffsetY = 120
         let after = pc.frameOfPresentedViewInContainerView
-
         #expect(after.origin.y == before.origin.y - 120)
         #expect(after.height == before.height)
         #expect(after.width == before.width)
@@ -307,7 +273,6 @@ struct PresentationControllerUITests {
     @Test func keyboardOffsetClampedToZeroY() {
         let pc = makeController(detents: [.custom(height: 300)], selectedIndex: 0)
         let containerH = Self.containerSize.height
-        // Push the offset so far that the computed y would go negative.
         pc.keyboardOffsetY = containerH
         let frame = pc.frameOfPresentedViewInContainerView
         #expect(frame.origin.y >= 0)
@@ -316,8 +281,8 @@ struct PresentationControllerUITests {
     // MARK: - dimming view
 
     @Test func finalizeSnapDoesNotShowDimmingWhenDisabled() {
-        // Build a controller with dimming disabled BEFORE lifecycle runs.
         let presented = UIViewController()
+        _ = presented.view
         let pc = TestablePresentationController(
             presented: presented,
             presenting: nil,
@@ -329,12 +294,71 @@ struct PresentationControllerUITests {
         pc.presentationTransitionWillBegin()
         pc.containerViewWillLayoutSubviews()
         pc.presentationTransitionDidEnd(true)
-
-        pc.snapToHeight(300)
-        TestHarness.flushRunLoop(seconds: 0.5)
-
+        pc.finalizeSnap(to: CGSize(width: 390, height: 300))
         let containerSubviews = pc.containerView?.subviews ?? []
         let dimming = containerSubviews.first { $0.backgroundColor != .clear }
         #expect(dimming?.alpha == 0)
+    }
+
+    // MARK: - callbacks
+
+    @Test func onDetentChangedFiresOnSnapToHeight() {
+        let pc = makeController(
+            detents: [.custom(height: 200), .custom(height: 500)],
+            selectedIndex: 0
+        )
+        pc.presentationTransitionDidEnd(true)
+
+        var firedIndex: Int?
+        var firedHeight: CGFloat?
+        pc.onDetentChanged = { idx, h in
+            firedIndex = idx
+            firedHeight = h
+        }
+
+        pc.snapToHeight(500)
+        pc.finalizeSnap(to: CGSize(width: 390, height: 500))
+
+        #expect(firedIndex == 1)
+        #expect(firedHeight == 500)
+    }
+
+    @Test func onDetentChangedFiresOnLayoutResize() {
+        let pc = makeController(
+            detents: [.custom(height: 200), .custom(height: 500), .custom(height: 800)],
+            selectedIndex: 2,
+            containerSize: CGSize(width: 390, height: 844),
+            configure: { $0.maxHeightFraction = 0.9 }
+        )
+        pc.presentationTransitionDidEnd(true)
+
+        var firedIndex: Int?
+        pc.onDetentChanged = { idx, _ in firedIndex = idx }
+
+        pc.resizeContainer(to: CGSize(width: 390, height: 480))
+        #expect(firedIndex == 1)
+    }
+
+    // MARK: - helpers
+
+    private func drivePan(
+        _ gesture: UIPanGestureRecognizer,
+        on pc: TestablePresentationController,
+        translation: CGPoint
+    ) {
+        guard let pv = pc.presentedView else { return }
+
+        gesture.setTranslation(.zero, in: pv)
+        gesture.state = .began
+        pc.handleGrabberPan(gesture)
+
+        gesture.setTranslation(translation, in: pv)
+        gesture.state = .changed
+        pc.handleGrabberPan(gesture)
+
+        gesture.state = .ended
+        pc.handleGrabberPan(gesture)
+
+        TestHarness.flushRunLoop(seconds: 0.3)
     }
 }

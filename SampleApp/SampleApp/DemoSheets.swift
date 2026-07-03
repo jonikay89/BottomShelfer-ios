@@ -1,6 +1,7 @@
 import UIKit
 import BottomShelfer
 import Combine
+import SwiftUI
 
 /// A simple sheet showing how to snap programmatically.
 final class FiltersSheetViewController: UIViewController, BottomShelferPresentable {
@@ -264,5 +265,212 @@ final class FixedSheetViewController: UIViewController, BottomShelferPresentable
 
     @objc private func dismissSelf() {
         dismiss(animated: true)
+    }
+}
+
+// MARK: - Grabber pill customization
+
+/// Shows how to customize the grabber pill — size, color, corner radius.
+final class GrabberPillSheetViewController: UIViewController, BottomShelferPresentable {
+    let bottomShelferPresentationManager = BottomShelferPresentationManager()
+
+    var dismissOnHide: Bool { true }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        let label = UILabel()
+        label.text = "Custom grabber: wider, thicker,\nbright pill with rounded ends."
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .preferredFont(forTextStyle: .body)
+
+        let samplePill = UIView()
+        samplePill.backgroundColor = .systemIndigo
+        samplePill.layer.cornerRadius = 4
+        samplePill.translatesAutoresizingMaskIntoConstraints = false
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [label, samplePill, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            samplePill.widthAnchor.constraint(equalToConstant: 100),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+}
+
+// MARK: - Events demo
+
+/// Demonstrates drag, dismiss, and detent-change callbacks with on-screen log.
+final class EventsSheetViewController: UIViewController, BottomShelferPresentable {
+    lazy var bottomShelferPresentationManager: BottomShelferPresentationManager = {
+        let manager = BottomShelferPresentationManager()
+        manager.onDismiss = { [weak self] in self?.handleEvent("onDismiss") }
+        manager.onGrabberDragBegan = { [weak self] in self?.handleEvent("onGrabberDragBegan") }
+        manager.onGrabberDragEnded = { [weak self] in self?.handleEvent("onGrabberDragEnded") }
+        manager.onContentDragBegan = { [weak self] in self?.handleEvent("onContentDragBegan") }
+        manager.onContentDragEnded = { [weak self] in self?.handleEvent("onContentDragEnded") }
+        manager.onDetentChanged = { [weak self] idx, h in
+            self?.handleEvent("onDetentChanged idx=\(idx) h=\(Int(h))pt")
+        }
+        return manager
+    }()
+
+    var dismissOnHide: Bool { false }
+
+    private let eventLog = UILabel()
+    private var logCount = 0
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        let header = UILabel()
+        header.text = "Drag & dismiss events"
+        header.font = .preferredFont(forTextStyle: .headline)
+        header.textAlignment = .center
+
+        eventLog.text = "Drag the grabber or tap the scrim…"
+        eventLog.numberOfLines = 0
+        eventLog.textAlignment = .center
+        eventLog.font = .monospacedSystemFont(ofSize: 14, weight: .medium)
+        eventLog.backgroundColor = .tertiarySystemBackground
+        eventLog.layer.cornerRadius = 8
+        eventLog.clipsToBounds = true
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [header, eventLog, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.alignment = .fill
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+
+    private func handleEvent(_ event: String) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        let time = formatter.string(from: Date())
+        logCount += 1
+        let message = "#\(logCount)  [\(time)]  \(event)"
+        eventLog.text = message
+        print("[BottomShelfer] \(message)")
+    }
+}
+
+/// Embeds a SwiftUI form inside a UIKit bottom-sheet, demonstrating
+/// interoperability between the two frameworks.
+final class SwiftUISheetViewController: UIViewController, BottomShelferPresentable {
+    let bottomShelferPresentationManager = BottomShelferPresentationManager()
+
+    var dismissOnHide: Bool { false }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .systemBackground
+
+        let header = UILabel()
+        header.text = "SwiftUI pickers inside BottomShelfer"
+        header.font = .preferredFont(forTextStyle: .headline)
+        header.textAlignment = .center
+
+        let hosting = UIHostingController(rootView: SwiftUIDemoContent())
+        addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(hosting.view)
+        hosting.didMove(toParent: self)
+
+        let dismissButton = UIButton(type: .system)
+        dismissButton.setTitle("Dismiss", for: .normal)
+        dismissButton.addTarget(self, action: #selector(dismissSelf), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [header, hosting.view, dismissButton])
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.alignment = .fill
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: view.topAnchor, constant: 60),
+            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+        ])
+    }
+
+    @objc private func dismissSelf() {
+        dismiss(animated: true)
+    }
+}
+
+private struct SwiftUIDemoContent: View {
+    @State private var selectedColor = "Blue"
+    @State private var fontSize: CGFloat = 16
+    @State private var isEnabled = true
+
+    private let colors = ["Blue", "Green", "Orange", "Purple", "Red"]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Color")
+                Spacer()
+                Picker("Color", selection: $selectedColor) {
+                    ForEach(colors, id: \.self) { Text($0) }
+                }
+                .pickerStyle(.menu)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Font size: \(Int(fontSize))pt")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Slider(value: $fontSize, in: 12...28, step: 1)
+                    .tint(swiftColor)
+            }
+
+            Toggle("Enabled", isOn: $isEnabled)
+                .tint(swiftColor)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var swiftColor: Color {
+        switch selectedColor {
+        case "Green": return .green
+        case "Orange": return .orange
+        case "Purple": return .purple
+        case "Red": return .red
+        default: return .blue
+        }
     }
 }
